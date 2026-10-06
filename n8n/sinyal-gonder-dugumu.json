@@ -1,0 +1,35 @@
+{
+  "name": "Sinyali siteye gönder (düğümü kopyala)",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sinyal-defteri-api.erenkaraca2005.workers.dev/api/signals",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer BURAYA_API_ANAHTARI"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"symbol\": \"{{ $json.symbol }}\",\n  \"side\": \"{{ $json.signal }}\",\n  \"entry\": {{ $json.entry }},\n  \"tp\": {{ $json.tp }},\n  \"sl\": {{ $json.sl }},\n  \"tf\": \"4s\"\n}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0003-4000-8000-000000000003",
+      "name": "Siteye sinyal gönder",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ]
+    }
+  ],
+  "connections": {},
+  "active": false,
+  "settings": {}
+}
