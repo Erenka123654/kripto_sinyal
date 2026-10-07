@@ -2,52 +2,25 @@
   "name": "Sinyal Sonuç Takibi",
   "nodes": [
     {
-      "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "minutes",
-              "minutesInterval": 10
-            }
-          ]
-        }
-      },
+      "parameters": { "rule": { "interval": [{ "field": "minutes", "minutesInterval": 10 }] } },
       "id": "a1b2c3d4-0001-4000-8000-000000000001",
       "name": "Her 10 dakikada",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [
-        0,
-        0
-      ]
+      "position": [0, 0]
     },
     {
       "parameters": {
-        "jsCode": "// Açık sinyallerin hedefe/stopa ulaşıp ulaşmadığını kontrol eder.\nconst API = 'https://sinyal-defteri-api.erenkaraca2005.workers.dev';\nconst KEY = 'BURAYA_API_ANAHTARI';\nconst h = this.helpers;\nconst list = await h.httpRequest({ url: API + '/api/signals', json: true });\nconst out = [];\nfor (const s of list.filter(x => x.status === 'open')) {\n  const k = await h.httpRequest({ url: `https://api.binance.com/api/v3/klines?symbol=${s.symbol}&interval=5m&startTime=${new Date(s.time).getTime()}&limit=1000`, json: true });\n  let res = null;\n  for (const c of k) {\n    const hi = +c[2], lo = +c[3], buy = s.side === 'BUY';\n    const hitSl = buy ? lo <= s.sl : hi >= s.sl;\n    const hitTp = buy ? hi >= s.tp : lo <= s.tp;\n    if (hitSl) { res = 'sl'; break; }   // aynı mumda ikisi de olursa temkinli davranıp stop sayılır\n    if (hitTp) { res = 'tp'; break; }\n  }\n  if (res) {\n    await h.httpRequest({ method: 'PATCH', url: `${API}/api/signals/${s.id}`, headers: { Authorization: 'Bearer ' + KEY }, body: { status: res }, json: true });\n    out.push({ json: { id: s.id, symbol: s.symbol, sonuc: res } });\n  }\n}\nreturn out;"
+        "jsCode": "// Açık sinyallerin hedefe/stopa ulaşıp ulaşmadığını kontrol eder.\nconst API = 'https://kripto-sinyal.erenkaraca2005.workers.dev';\nconst KEY = 'BURAYA_API_ANAHTARI';\nconst h = this.helpers;\nconst list = await h.httpRequest({ url: API + '/api/signals', json: true });\nconst out = [];\nfor (const s of list.filter(x => x.status === 'open')) {\n  const k = await h.httpRequest({ url: `https://api.binance.com/api/v3/klines?symbol=${s.symbol}&interval=5m&startTime=${new Date(s.time).getTime()}&limit=1000`, json: true });\n  let res = null;\n  for (const c of k) {\n    const hi = +c[2], lo = +c[3], buy = s.side === 'BUY';\n    const hitSl = buy ? lo <= s.sl : hi >= s.sl;\n    const hitTp = buy ? hi >= s.tp : lo <= s.tp;\n    if (hitSl) { res = 'sl'; break; }\n    if (hitTp) { res = 'tp'; break; }\n  }\n  if (res) {\n    await h.httpRequest({ method: 'PATCH', url: `${API}/api/signals/${s.id}`, headers: { Authorization: 'Bearer ' + KEY }, body: { status: res }, json: true });\n    out.push({ json: { id: s.id, symbol: s.symbol, sonuc: res } });\n  }\n}\nreturn out;"
       },
       "id": "a1b2c3d4-0002-4000-8000-000000000002",
       "name": "Sonuçları kontrol et",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        260,
-        0
-      ]
+      "position": [260, 0]
     }
   ],
-  "connections": {
-    "Her 10 dakikada": {
-      "main": [
-        [
-          {
-            "node": "Sonuçları kontrol et",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
+  "connections": { "Her 10 dakikada": { "main": [[{ "node": "Sonuçları kontrol et", "type": "main", "index": 0 }]] } },
   "active": false,
   "settings": {}
 }

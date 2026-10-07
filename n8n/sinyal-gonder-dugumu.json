@@ -4,16 +4,9 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://sinyal-defteri-api.erenkaraca2005.workers.dev/api/signals",
+        "url": "https://kripto-sinyal.erenkaraca2005.workers.dev/api/signals",
         "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "Bearer BURAYA_API_ANAHTARI"
-            }
-          ]
-        },
+        "headerParameters": { "parameters": [{ "name": "Authorization", "value": "Bearer BURAYA_API_ANAHTARI" }] },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"symbol\": \"{{ $json.symbol }}\",\n  \"side\": \"{{ $json.signal }}\",\n  \"entry\": {{ $json.entry }},\n  \"tp\": {{ $json.tp }},\n  \"sl\": {{ $json.sl }},\n  \"tf\": \"4s\"\n}",
@@ -23,10 +16,7 @@
       "name": "Siteye sinyal gönder",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        0,
-        0
-      ]
+      "position": [0, 0]
     }
   ],
   "connections": {},

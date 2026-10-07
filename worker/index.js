@@ -51,9 +51,16 @@ function authorized(request, env) {
 export default {
   async fetch(request, env) {
     const origin = requestOrigin(request, env);
+    const path = new URL(request.url).pathname.replace(/\/+$/, '') || '/';
+    const isApiRequest = path.startsWith('/api/');
+
+    if (!isApiRequest) {
+      if (!env.ASSETS || typeof env.ASSETS.fetch !== 'function') return json({ error: 'statik asset binding tanımlı değil' }, 500, origin);
+      return env.ASSETS.fetch(request);
+    }
+
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: jsonHeaders(origin) });
 
-    const path = new URL(request.url).pathname.replace(/\/+$/, '') || '/';
     if (path !== '/api/signals' && !/^\/api\/signals\/\d+$/.test(path)) return json({ error: 'bulunamadi' }, 404, origin);
 
     let signals;

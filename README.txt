@@ -1,16 +1,28 @@
-KURULUM (sırayla)
-1. Cloudflare > Workers & Pages > Create application > Create Worker > ad: sinyal-defteri-api > Deploy.
-2. Worker sayfasında "Edit code" aç, içeriği worker/index.js ile değiştir > Deploy.
-3. Settings > Bindings > Add > KV namespace > Variable name: SIGNALS > Namespace: sinyal-defteri (hesabında hazır) > Deploy.
-4. Settings > Variables and Secrets > Add > Type: Secret > Name: API_KEY > Value: kendi belirlediğin uzun rastgele bir şifre > Deploy.
-5. Tarayıcıda şu adresi aç: https://sinyal-defteri-api.erenkaraca2005.workers.dev/api/signals  (cevap [] olmalı)
-6. n8n > Import from file > n8n/sinyal-sonuc-takibi.json. "Sonuçları kontrol et" düğümünde BURAYA_API_ANAHTARI yerine 4. adımdaki şifreyi yaz. Workflow'u Active yap.
-7. Mevcut Telegram akışında mesaj düğümünden sonra n8n/sinyal-gonder-dugumu.json içindeki düğümü kopyalayıp yapıştır. Alan adlarını ({{ $json.symbol }} vb.) kendi akışına göre düzelt, anahtarı yaz.
-8. Cloudflare Pages: depoyu bağla, Build output directory alanına site yaz (build command boş kalsın).
-Worker yayınlanana kadar site demo veriyle çalışır; gerçek veri gelince demo notu otomatik gizlenir.
+TEK WORKER KURULUMU
+
+Bu repo artık siteyi ve API'yi tek Cloudflare Worker üzerinden yayınlar.
+
+1. Cloudflare'da mevcut `sinyal-defteri` KV namespace'inin ID'sini alın.
+2. `wrangler.jsonc` içindeki `BURAYA_KV_NAMESPACE_ID` değerini bu ID ile değiştirin.
+3. `SIGNALS` KV binding'inin adının `SIGNALS` olduğunu doğrulayın.
+4. Worker Secrets bölümünde `API_KEY` adında uzun ve rastgele bir secret oluşturun.
+5. Repo deploy edildiğinde `site/` statik dosyaları, `worker/index.js` ise `/api/*` yollarını yönetir.
+6. API testi: `https://kripto-sinyal.erenkaraca2005.workers.dev/api/signals` adresi JSON dizi döndürmelidir.
+7. n8n akışlarında API URL'sini aynı Worker adresiyle, anahtarı da `API_KEY` secret ile eşleştirin.
+8. Gerçek sinyal üretimi için `n8n/sinyal-motoru.json` akışını içe aktarın, içindeki `BURAYA_API_ANAHTARI` değerini API anahtarınızla değiştirin ve önce pasif/manual çalıştırarak test edin. Bu akış yalnızca sinyal üretir; otomatik borsa emri açmaz.
+
+CLI ile deploy etmek için:
+
+```powershell
+npx wrangler deploy
+```
+
+Gerçek `API_KEY` değerini bu repoya yazmayın. `sinyal-defteri-api` Worker'ı bu yapıdan sonra kullanılmaz; eski Worker'ı silmeden önce yeni birleşik Worker'ın API testini tamamlayın.
 
 KLASÖR DÜZENİ
-site/    -> internete yayınlanan dosyalar (index.html, config.js, signals.js)
-worker/  -> Cloudflare Worker kodu (panelden yapıştırılır, yayınlanmaz)
-n8n/     -> n8n akış dosyaları (yayınlanmaz)
-Gerçek API_KEY şifresini hiçbir dosyaya yazma.
+
+site/    -> statik web sitesi
+worker/  -> API Worker kodu
+n8n/     -> n8n akış dosyaları
+
+Sinyal motoru EMA20/EMA50 trendi, RSI14, MACD ve ATR ile saatlik mumlarda koşulları kontrol eder. Başlangıçta kâğıt/test sinyali olarak kullanılmalı; gerçek para ile işlemden önce yeterli geçmiş veri ve test sonucu olmadan otomatikleştirilmemelidir.

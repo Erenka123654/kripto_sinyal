@@ -1,0 +1,39 @@
+{
+  "name": "Kripto Sinyal Motoru (paper signal)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "a1b2c3d4-0004-4000-8000-000000000004",
+      "name": "Her 15 dakikada",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Bu akış yalnızca sinyal üretir; borsada otomatik emir açmaz.\nconst API = 'https://kripto-sinyal.erenkaraca2005.workers.dev';\nconst KEY = 'BURAYA_API_ANAHTARI';\nconst SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT'];\nconst INTERVAL = '1h';\nconst LIMIT = 250;\nconst RISK_ATR = 1.5;\nconst REWARD_ATR = 2.25;\nconst h = this.helpers;\n\nfunction ema(values, period) {\n  const k = 2 / (period + 1);\n  const output = [values[0]];\n  for (let i = 1; i < values.length; i++) output.push(values[i] * k + output[i - 1] * (1 - k));\n  return output;\n}\nfunction rsi(values, period = 14) {\n  let gain = 0, loss = 0;\n  for (let i = 1; i <= period; i++) { const d = values[i] - values[i - 1]; if (d >= 0) gain += d; else loss -= d; }\n  gain /= period; loss /= period;\n  for (let i = period + 1; i < values.length; i++) { const d = values[i] - values[i - 1]; gain = (gain * (period - 1) + Math.max(d, 0)) / period; loss = (loss * (period - 1) + Math.max(-d, 0)) / period; }\n  return loss === 0 ? 100 : 100 - 100 / (1 + gain / loss);\n}\nfunction atr(candles, period = 14) {\n  const ranges = [];\n  for (let i = 1; i < candles.length; i++) { const c = candles[i], p = candles[i - 1]; ranges.push(Math.max(c.high - c.low, Math.abs(c.high - p.close), Math.abs(c.low - p.close))); }\n  return ranges.slice(-period).reduce((a, b) => a + b, 0) / period;\n}\nfunction round(value) { return Number(value.toPrecision(8)); }\n\nconst existing = await h.httpRequest({ url: API + '/api/signals', json: true });\nconst results = [];\nfor (const symbol of SYMBOLS) {\n  const raw = await h.httpRequest({ url: `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${INTERVAL}&limit=${LIMIT}`, json: true });\n  const candles = raw.map(x => ({ close: +x[4], high: +x[2], low: +x[3] }));\n  if (candles.length < 60) continue;\n  const closes = candles.map(x => x.close);\n  const price = closes.at(-1);\n  const e20 = ema(closes, 20).at(-1);\n  const e50 = ema(closes, 50).at(-1);\n  const e12 = ema(closes, 12);\n  const e26 = ema(closes, 26);\n  const macdSeries = e12.map((value, index) => value - e26[index]);\n  const macd = macdSeries.at(-1);\n  const macdSignal = ema(macdSeries, 9).at(-1);\n  const r = rsi(closes);\n  const a = atr(candles);\n  if (!Number.isFinite(a) || a <= 0) continue;\n\n  const buy = price > e20 && e20 > e50 && r >= 52 && r <= 68 && macd > macdSignal;\n  const sell = price < e20 && e20 < e50 && r >= 32 && r <= 48 && macd < macdSignal;\n  if (!buy && !sell) continue;\n  if (existing.some(signal => signal.symbol === symbol && signal.status === 'open')) continue;\n\n  const side = buy ? 'BUY' : 'SELL';\n  const entry = price;\n  const sl = buy ? price - RISK_ATR * a : price + RISK_ATR * a;\n  const tp = buy ? price + REWARD_ATR * a : price - REWARD_ATR * a;\n  const payload = { symbol, side, entry: round(entry), tp: round(tp), sl: round(sl), tf: INTERVAL };\n  const saved = await h.httpRequest({ method: 'POST', url: API + '/api/signals', headers: { Authorization: 'Bearer ' + KEY }, body: payload, json: true });\n  results.push({ json: { ...saved, indicators: { rsi: round(r), ema20: round(e20), ema50: round(e50), macd: round(macd), atr: round(a) } } });\n}\nreturn results;"
+      },
+      "id": "a1b2c3d4-0005-4000-8000-000000000005",
+      "name": "Göstergeleri hesapla ve sinyal üret",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [280, 0]
+    }
+  ],
+  "connections": {
+    "Her 15 dakikada": {
+      "main": [[{ "node": "Göstergeleri hesapla ve sinyal üret", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {}
+}
